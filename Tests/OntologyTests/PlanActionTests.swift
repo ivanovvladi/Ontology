@@ -49,6 +49,7 @@ struct PlanActionTests {
         planAction.identifier = "test-id"
         planAction.priority = 5
         planAction.url = URL(string: "https://example.com/task")
+        planAction.agent = Person(name: "Taylor Example")
 
         let encoder = JSONEncoder()
         encoder.outputFormatting = .sortedKeys
@@ -63,6 +64,11 @@ struct PlanActionTests {
         #expect(json["actionStatus"] as? String == "PotentialAction")
         #expect(json["priority"] as? Int == 5)
         #expect(json["url"] as? String == "https://example.com/task")
+
+        let agent = json["agent"] as! [String: Any]
+        #expect(agent["@type"] as? String == "Person")
+        #expect(agent["givenName"] as? String == "Taylor")
+        #expect(agent["familyName"] as? String == "Example")
     }
 
     @Test("PlanAction JSON-LD decoding")
@@ -76,7 +82,12 @@ struct PlanActionTests {
                 "description": "A decoded task",
                 "actionStatus": "CompletedAction",
                 "priority": 3,
-                "url": "https://example.com/decoded"
+                "url": "https://example.com/decoded",
+                "agent": {
+                    "@type": "Person",
+                    "givenName": "Taylor",
+                    "familyName": "Example"
+                }
             }
             """
 
@@ -90,6 +101,8 @@ struct PlanActionTests {
         #expect(planAction.status == .completed)
         #expect(planAction.priority == 3)
         #expect(planAction.url?.absoluteString == "https://example.com/decoded")
+        #expect(planAction.agent?.givenName == "Taylor")
+        #expect(planAction.agent?.familyName == "Example")
     }
 
     @Test("PlanAction with ItemList object")

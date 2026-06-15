@@ -32,6 +32,9 @@ public struct PlanAction: Hashable, Sendable {
     /// The list this reminder belongs to, modeled as a Schema.org ItemList.
     public var object: ItemList?
 
+    /// The direct performer or assignee of the action.
+    public var agent: Person?
+
     public init(
         name: String,
         dueDate: Date? = nil,
@@ -72,7 +75,7 @@ extension PlanAction: Codable {
     private enum CodingKeys: String, CodingKey {
         case name, description, scheduledTime
         case status = "actionStatus"
-        case priority, url, object
+        case priority, url, object, agent
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -97,6 +100,7 @@ extension PlanAction: Codable {
         try container.encodeIfPresent(priority, forKey: .attribute(.priority))
         try container.encodeIfPresent(url, forKey: .attribute(.url))
         try container.encodeIfPresent(object, forKey: .attribute(.object))
+        try container.encodeIfPresent(agent, forKey: .attribute(.agent))
     }
 
     public init(from decoder: Decoder) throws {
@@ -131,5 +135,6 @@ extension PlanAction: Codable {
         priority = try container.decodeIfPresent(Int.self, forKey: .attribute(.priority))
         url = try container.decodeIfPresent(URL.self, forKey: .attribute(.url))
         object = try container.decodeIfPresent(ItemList.self, forKey: .attribute(.object))
+        agent = try container.decodeIfPresent(Person.self, forKey: .attribute(.agent))
     }
 }
