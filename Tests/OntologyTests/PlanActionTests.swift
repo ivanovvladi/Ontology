@@ -46,10 +46,19 @@ struct PlanActionTests {
             description: "A test task",
             completed: false
         )
-        planAction.identifier = "test-id"
+        planAction.id = "test-node-id"
+        planAction.identifier = PropertyValue(
+            propertyID: "apple-reminders:reminder-id",
+            value: "test-id"
+        )
         planAction.priority = 5
         planAction.url = URL(string: "https://example.com/task")
         planAction.agent = Person(name: "Taylor Example")
+        planAction.agent?.id = "person-node-id"
+        planAction.agent?.identifier = PropertyValue(
+            propertyID: "apple-reminders:assignee-id",
+            value: "assignee-id"
+        )
 
         let encoder = JSONEncoder()
         encoder.outputFormatting = .sortedKeys
@@ -58,17 +67,29 @@ struct PlanActionTests {
 
         #expect(json["@context"] as? String == "https://schema.org")
         #expect(json["@type"] as? String == "PlanAction")
-        #expect(json["@id"] as? String == "test-id")
+        #expect(json["@id"] as? String == "test-node-id")
         #expect(json["name"] as? String == "Test task")
         #expect(json["description"] as? String == "A test task")
         #expect(json["actionStatus"] as? String == "PotentialAction")
         #expect(json["priority"] as? Int == 5)
         #expect(json["url"] as? String == "https://example.com/task")
 
+        let identifier = json["identifier"] as! [String: Any]
+        #expect(identifier["@type"] as? String == "PropertyValue")
+        #expect(identifier["propertyID"] as? String == "apple-reminders:reminder-id")
+        #expect(identifier["value"] as? String == "test-id")
+
         let agent = json["agent"] as! [String: Any]
         #expect(agent["@type"] as? String == "Person")
+        #expect(agent["@id"] as? String == "person-node-id")
+        #expect(agent["name"] as? String == "Taylor Example")
         #expect(agent["givenName"] as? String == "Taylor")
         #expect(agent["familyName"] as? String == "Example")
+
+        let agentIdentifier = agent["identifier"] as! [String: Any]
+        #expect(agentIdentifier["@type"] as? String == "PropertyValue")
+        #expect(agentIdentifier["propertyID"] as? String == "apple-reminders:assignee-id")
+        #expect(agentIdentifier["value"] as? String == "assignee-id")
     }
 
     @Test("PlanAction JSON-LD decoding")
@@ -77,7 +98,12 @@ struct PlanActionTests {
             {
                 "@context": "https://schema.org",
                 "@type": "PlanAction",
-                "@id": "test-id",
+                "@id": "test-node-id",
+                "identifier": {
+                    "@type": "PropertyValue",
+                    "propertyID": "apple-reminders:reminder-id",
+                    "value": "test-id"
+                },
                 "name": "Decoded task",
                 "description": "A decoded task",
                 "actionStatus": "CompletedAction",
@@ -85,6 +111,13 @@ struct PlanActionTests {
                 "url": "https://example.com/decoded",
                 "agent": {
                     "@type": "Person",
+                    "@id": "person-node-id",
+                    "identifier": {
+                        "@type": "PropertyValue",
+                        "propertyID": "apple-reminders:assignee-id",
+                        "value": "assignee-id"
+                    },
+                    "name": "Taylor Example",
                     "givenName": "Taylor",
                     "familyName": "Example"
                 }
@@ -95,12 +128,18 @@ struct PlanActionTests {
         let decoder = JSONDecoder()
         let planAction = try decoder.decode(PlanAction.self, from: data)
 
-        #expect(planAction.identifier == "test-id")
+        #expect(planAction.id == "test-node-id")
+        #expect(planAction.identifier?.propertyID == "apple-reminders:reminder-id")
+        #expect(planAction.identifier?.value == "test-id")
         #expect(planAction.name == "Decoded task")
         #expect(planAction.description == "A decoded task")
         #expect(planAction.status == .completed)
         #expect(planAction.priority == 3)
         #expect(planAction.url?.absoluteString == "https://example.com/decoded")
+        #expect(planAction.agent?.id == "person-node-id")
+        #expect(planAction.agent?.identifier?.propertyID == "apple-reminders:assignee-id")
+        #expect(planAction.agent?.identifier?.value == "assignee-id")
+        #expect(planAction.agent?.name == "Taylor Example")
         #expect(planAction.agent?.givenName == "Taylor")
         #expect(planAction.agent?.familyName == "Example")
     }
@@ -112,7 +151,23 @@ struct PlanActionTests {
             completed: false
         )
 
-        let itemList = ItemList(name: "My Tasks", numberOfItems: 10)
+        var itemList = ItemList(
+            name: "My Tasks",
+            numberOfItems: 10,
+            itemListElement: [
+                ListItem(
+                    identifier: PropertyValue(
+                        propertyID: "apple-reminders:section-id",
+                        value: "section-id"
+                    ),
+                    name: "Today"
+                )
+            ]
+        )
+        itemList.identifier = PropertyValue(
+            propertyID: "apple-reminders:list-id",
+            value: "list-id"
+        )
         planAction.object = itemList
 
         let encoder = JSONEncoder()
@@ -128,6 +183,15 @@ struct PlanActionTests {
         #expect(object["@type"] as? String == "ItemList")
         #expect(object["name"] as? String == "My Tasks")
         #expect(object["numberOfItems"] as? Int == 10)
+
+        let objectIdentifier = object["identifier"] as! [String: Any]
+        #expect(objectIdentifier["@type"] as? String == "PropertyValue")
+        #expect(objectIdentifier["propertyID"] as? String == "apple-reminders:list-id")
+        #expect(objectIdentifier["value"] as? String == "list-id")
+
+        let elements = object["itemListElement"] as! [[String: Any]]
+        #expect(elements.first?["@type"] as? String == "ListItem")
+        #expect(elements.first?["name"] as? String == "Today")
     }
 
     @Test("PlanAction equality and hashing")

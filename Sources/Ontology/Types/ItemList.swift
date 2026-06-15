@@ -2,8 +2,11 @@ import Foundation
 
 /// An ItemList model following Schema.org ontology (https://schema.org/ItemList)
 public struct ItemList: Hashable, Sendable {
-    /// Unique identifier for the item list
-    public var identifier: String?
+    /// JSON-LD node identifier for the item list.
+    public var id: String?
+
+    /// Schema.org identifier for the item list.
+    public var identifier: PropertyValue?
 
     /// The name/title of the item list
     public var name: String?
@@ -14,9 +17,17 @@ public struct ItemList: Hashable, Sendable {
     /// The number of items in the list
     public var numberOfItems: Int?
 
-    public init(name: String? = nil, numberOfItems: Int? = nil) {
+    /// List elements represented as Schema.org ListItem values.
+    public var itemListElement: [ListItem]?
+
+    public init(
+        name: String? = nil,
+        numberOfItems: Int? = nil,
+        itemListElement: [ListItem]? = nil
+    ) {
         self.name = name
         self.numberOfItems = numberOfItems
+        self.itemListElement = itemListElement
     }
 }
 
@@ -26,7 +37,7 @@ public struct ItemList: Hashable, Sendable {
     extension ItemList {
         /// Initialize an ItemList from an EKCalendar
         public init(_ calendar: EKCalendar) {
-            self.identifier = calendar.calendarIdentifier
+            self.id = calendar.calendarIdentifier
             self.name = calendar.title
         }
     }
@@ -34,7 +45,7 @@ public struct ItemList: Hashable, Sendable {
 
 extension ItemList: Codable {
     private enum CodingKeys: String, CodingKey {
-        case name, url, numberOfItems
+        case identifier, name, url, numberOfItems, itemListElement
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -45,10 +56,12 @@ extension ItemList: Codable {
         }
 
         try container.encode("ItemList", forKey: .type)
-        try container.encodeIfPresent(identifier, forKey: .id)
+        try container.encodeIfPresent(id, forKey: .id)
+        try container.encodeIfPresent(identifier, forKey: .attribute(.identifier))
         try container.encodeIfPresent(name, forKey: .attribute(.name))
         try container.encodeIfPresent(url, forKey: .attribute(.url))
         try container.encodeIfPresent(numberOfItems, forKey: .attribute(.numberOfItems))
+        try container.encodeIfPresent(itemListElement, forKey: .attribute(.itemListElement))
     }
 
     public init(from decoder: Decoder) throws {
@@ -62,9 +75,13 @@ extension ItemList: Codable {
             )
         }
 
-        identifier = try container.decodeIfPresent(String.self, forKey: .id)
+        id = try container.decodeIfPresent(String.self, forKey: .id)
+        identifier = try container.decodeIfPresent(
+            PropertyValue.self, forKey: .attribute(.identifier))
         name = try container.decodeIfPresent(String.self, forKey: .attribute(.name))
         url = try container.decodeIfPresent(URL.self, forKey: .attribute(.url))
         numberOfItems = try container.decodeIfPresent(Int.self, forKey: .attribute(.numberOfItems))
+        itemListElement = try container.decodeIfPresent(
+            [ListItem].self, forKey: .attribute(.itemListElement))
     }
 }

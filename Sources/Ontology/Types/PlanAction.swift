@@ -1,7 +1,10 @@
 /// A PlanAction model following Schema.org ontology (https://schema.org/PlanAction)
 public struct PlanAction: Hashable, Sendable {
-    /// Unique identifier for the plan action
-    public var identifier: String?
+    /// JSON-LD node identifier for the plan action.
+    public var id: String?
+
+    /// Schema.org identifier for the plan action.
+    public var identifier: PropertyValue?
 
     /// The name/title of the plan action
     public var name: String?
@@ -73,7 +76,7 @@ public struct PlanAction: Hashable, Sendable {
 
 extension PlanAction: Codable {
     private enum CodingKeys: String, CodingKey {
-        case name, description, scheduledTime
+        case identifier, name, description, scheduledTime
         case status = "actionStatus"
         case priority, url, object, agent
     }
@@ -90,9 +93,10 @@ extension PlanAction: Codable {
         try container.encode(String(describing: Self.self), forKey: .type)
 
         // Encode @id
-        try container.encodeIfPresent(identifier, forKey: .id)
+        try container.encodeIfPresent(id, forKey: .id)
 
         // Encode properties
+        try container.encodeIfPresent(identifier, forKey: .attribute(.identifier))
         try container.encodeIfPresent(name, forKey: .attribute(.name))
         try container.encodeIfPresent(description, forKey: .attribute(.description))
         try container.encodeIfPresent(scheduledTime, forKey: .attribute(.scheduledTime))
@@ -118,9 +122,11 @@ extension PlanAction: Codable {
         }
 
         // Decode @id
-        identifier = try container.decodeIfPresent(String.self, forKey: .id)
+        id = try container.decodeIfPresent(String.self, forKey: .id)
 
         // Decode properties
+        identifier = try container.decodeIfPresent(
+            PropertyValue.self, forKey: .attribute(.identifier))
         name = try container.decodeIfPresent(String.self, forKey: .attribute(.name))
         description = try container.decodeIfPresent(String.self, forKey: .attribute(.description))
         scheduledTime = try container.decodeIfPresent(

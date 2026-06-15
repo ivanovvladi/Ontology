@@ -1,7 +1,16 @@
 /// A Person model following Schema.org ontology (https://schema.org/Person)
 public struct Person: Hashable, Sendable {
-    /// Unique identifier for the person
-    public var identifier: String?
+    /// JSON-LD node identifier for the person.
+    public var id: String?
+
+    /// Schema.org identifier for the person.
+    public var identifier: PropertyValue?
+
+    /// The name of the person.
+    public var name: String?
+
+    /// An alias for the person.
+    public var alternateName: String?
 
     /// Given name (first name) of the person
     public var givenName: String?
@@ -48,6 +57,8 @@ public struct Person: Hashable, Sendable {
 
     /// Initialize a Person with just a name
     public init(name: String) {
+        self.name = name
+
         let formatter = PersonNameComponentsFormatter()
         if let components = formatter.personNameComponents(from: name) {
             self.givenName = components.givenName
@@ -74,7 +85,8 @@ public struct Person: Hashable, Sendable {
         public init?(_ contact: CNContact) {
             guard contact.contactType == .person else { return nil }
 
-            identifier = contact.identifier
+            id = contact.identifier
+            identifier = nil
             givenName = contact.givenName.isEmpty ? nil : contact.givenName
             familyName = contact.familyName.isEmpty ? nil : contact.familyName
             email =
@@ -200,7 +212,7 @@ public struct Person: Hashable, Sendable {
 
 extension Person: Codable {
     private enum CodingKeys: String, CodingKey {
-        case givenName, familyName, email, telephone, address
+        case identifier, name, alternateName, givenName, familyName, email, telephone, address
         case jobTitle, worksFor, url, birthDate, sameAs
         case contactPoint, knowsLanguage, preferences
         case spouse, children, siblings, parents, relatedTo
@@ -218,9 +230,12 @@ extension Person: Codable {
         try container.encode(String(describing: Self.self), forKey: .type)
 
         // Encode @id
-        try container.encodeIfPresent(identifier, forKey: .id)
+        try container.encodeIfPresent(id, forKey: .id)
 
         // Encode properties
+        try container.encodeIfPresent(identifier, forKey: .attribute(.identifier))
+        try container.encodeIfPresent(name, forKey: .attribute(.name))
+        try container.encodeIfPresent(alternateName, forKey: .attribute(.alternateName))
         try container.encodeIfPresent(givenName, forKey: .attribute(.givenName))
         try container.encodeIfPresent(familyName, forKey: .attribute(.familyName))
         try container.encodeIfPresent(email, forKey: .attribute(.email))
@@ -255,8 +270,13 @@ extension Person: Codable {
         }
 
         // Decode @id
-        identifier = try container.decodeIfPresent(String.self, forKey: .id)
+        id = try container.decodeIfPresent(String.self, forKey: .id)
 
+        identifier = try container.decodeIfPresent(
+            PropertyValue.self, forKey: .attribute(.identifier))
+        name = try container.decodeIfPresent(String.self, forKey: .attribute(.name))
+        alternateName = try container.decodeIfPresent(
+            String.self, forKey: .attribute(.alternateName))
         givenName = try container.decodeIfPresent(String.self, forKey: .attribute(.givenName))
         familyName = try container.decodeIfPresent(String.self, forKey: .attribute(.familyName))
         email = try container.decodeIfPresent([String].self, forKey: .attribute(.email))
